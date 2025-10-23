@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Generator Abjad, Angka & Huruf Ijaiyah</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+      }
+
+      .header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+
+      .controls {
+        padding: 30px;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .control-group {
+        margin-bottom: 20px;
+      }
+
+      .control-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #374151;
+      }
+
+      .control-group select,
+      .control-group input[type="text"],
+      .control-group input[type="number"] {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 16px;
+      }
+
+      .control-group input[type="range"] {
+        width: calc(100% - 60px);
+        -webkit-appearance: none; /* Override default slider styles */
+        appearance: none;
+        height: 8px;
+        background: #d1d5db;
+        outline: none;
+        border-radius: 4px;
+        transition: opacity .2s;
+      }
+
+      .control-group input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #667eea;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .control-group input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #667eea;
+        cursor: pointer;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .range-value {
+        display: inline-block;
+        width: 50px;
+        text-align: right;
+        font-weight: 600;
+        color: #667eea;
+      }
+
+      .size-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+
+      @media (max-width: 768px) {
+        .size-controls {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .type-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .type-option {
+        padding: 15px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+      }
+
+      .type-option:hover {
+        border-color: #667eea;
+        background: #f3f4f6;
+      }
+
+      .type-option.active {
+        border-color: #667eea;
+        background: #eef2ff;
+        color: #667eea;
+      }
+
+      .type-option h3 {
+        font-size: 1.2rem;
+        margin-bottom: 5px;
+      }
+
+      .type-option p {
+        font-size: 0.9rem;
+        color: #6b7280;
+      }
+
+      .display-area {
+        padding: 30px;
+        min-height: 400px;
+      }
+
+      .items-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Base for dynamic adjustment */
+        gap: 15px;
+        justify-items: center;
+      }
+
+      .item-card {
+        /* Default sizes, will be overridden by JS */
+        width: 100px;
+        height: 100px;
+        font-size: 24px; 
+        
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .item-card:hover {
+        transform: scale(1.1);
+      }
+
+      .volume-display {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 12px;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        padding: 20px;
+        background: #f8fafc;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn-primary {
+        background: #667eea;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #5a6fd8;
+      }
+
+      .btn-secondary {
+        background: #10b981;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background: #059669;
+      }
+
+      .btn-danger {
+        background: #ef4444;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #dc2626;
+      }
+
+      @media (max-width: 768px) {
+        .header h1 {
+          font-size: 2rem;
+        }
+
+        .type-selector {
+          grid-template-columns: 1fr;
+        }
+
+        .items-grid {
+          grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); /* Base for dynamic adjustment */
+        }
+
+        .item-card {
+          /* Default sizes, will be overridden by JS */
+          width: 80px;
+          height: 80px;
+          font-size: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Generator Abjad, Angka & Huruf Ijaiyah</h1>
+        <p>Pilih jenis karakter dan volume yang Anda inginkan</p>
+      </div>
+
+      <div class="controls">
+        <div class="type-selector">
+          <div class="type-option active" data-type="alphabet">
+            <h3>Abjad</h3>
+            <p>A-Z (26 huruf)</p>
+          </div>
+          <div class="type-option" data-type="numbers">
+            <h3>Angka</h3>
+            <p>0-100</p>
+          </div>
+          <div class="type-option" data-type="ijaiyah">
+            <h3>Huruf Ijaiyah</h3>
+            <p>ا-ي (28 huruf)</p>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Jenis Karakter:</label>
+          <select id="characterType">
+            <option value="alphabet">Abjad (A-Z)</option>
+            <option value="numbers">Angka (0-100)</option>
+            <option value="ijaiyah">Huruf Ijaiyah (ا-ي)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>Volume/Jumlah:</label>
+          <input type="range" id="volumeSlider" min="1" max="26" value="26" />
+          <span class="range-value" id="volumeValue">26</span>
+        </div>
+
+        <!-- New Control Group for Circle Size -->
+        <div class="control-group">
+          <label>Ukuran Lingkaran (px):</label>
+          <input type="range" id="circleSizeSlider" min="50" max="500" value="100" />
+          <span class="range-value" id="circleSizeValue">100</span>
+        </div>
+
+        <!-- New Control Group for Text Size -->
+        <div class="control-group">
+          <label>Ukuran Teks (px):</label>
+          <input type="range" id="textSizeSlider" min="16" max="250" value="24" />
+          <span class="range-value" id="textSizeValue">24</span>
+        </div>
+
+        <div class="control-group">
+          <label>Warna Tema:</label>
+          <select id="colorTheme">
+            <option value="rainbow">Pelangi</option>
+            <option value="blue">Biru</option>
+            <option value="green">Hijau</option>
+            <option value="purple">Ungu</option>
+            <option value="warm">Hangat</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="display-area">
+        <div class="items-grid" id="itemsGrid">
+          <!-- Items akan diisi oleh JavaScript -->
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-primary" onclick="generateItems()">
+          Generate
+        </button>
+        <button class="btn btn-secondary" onclick="downloadPNG()">
+          Download PNG
+        </button>
+        <button class="btn btn-secondary" onclick="downloadPDF()">
+          Download PDF
+        </button>
+        <button class="btn btn-danger" onclick="clearItems()">Clear</button>
+      </div>
+    </div>
+
+    <!-- Custom Modal Component (for error/info messages) -->
+    <div id="custom-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background-color: white; padding: 20px; border-radius: 10px; text-align: center; max-width: 300px;">
+            <p id="modal-message" style="margin-bottom: 15px; font-weight: bold;"></p>
+            <button id="modal-confirm-btn" style="padding: 8px 15px; background-color: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">OK</button>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loading-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 1001; justify-content: center; align-items: center; flex-direction: column; color: white;">
+        <div style="border: 4px solid rgba(255, 255, 255, 0.3); border-top: 4px solid #fff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>
+        <p style="margin-top: 15px; font-weight: bold;">Sedang Mengunduh PDF...</p>
+    </div>
+
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+
+    <script>
+      let currentType = "alphabet";
+      let currentVolume = 26;
+      let currentCircleSize = 100; // Default circle size
+      let currentTextSize = 24;    // Default text size
+
+      const characterSets = {
+        alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
+        numbers: Array.from({ length: 101 }, (_, i) => i.toString()),
+        ijaiyah: [
+          "ا", "ب", "ت", "ث", "ج", "ح", "خ", "د", "ذ", "ر", "ز", "س", "ش", "ص",
+          "ض", "ط", "ظ", "ع", "غ", "ف", "ق", "ك", "l", "m", "n", "h", "w", "y",
+        ],
+      };
+
+      const colorThemes = {
+        rainbow: [
+          "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FECA57", "#FF9FF3",
+          "#54A0FF", "#5F27CD",
+        ],
+        blue: [
+          "#667eea", "#764ba2", "#4c7ef3", "#2980b9", "#3498db", "#5dade2",
+          "#85c1e9", "#aed6f1",
+        ],
+        green: [
+          "#27ae60", "#2ecc71", "#58d68d", "#82e0aa", "#abebc6", "#1e8449",
+          "#239b56", "#28b463",
+        ],
+        purple: [
+          "#8e44ad", "#9b59b6", "#af7ac5", "#c39bd3", "#d2b4de", "#6c3483",
+          "#7d3c98", "#884ea0",
+        ],
+        warm: [
+          "#e74c3c", "#f39c12", "#f1c40f", "#e67e22", "#d35400", "#c0392b",
+          "#a93226", "#922b21",
+        ],
+      };
+
+      // Get DOM elements for new controls
+      const circleSizeSlider = document.getElementById("circleSizeSlider");
+      const circleSizeValue = document.getElementById("circleSizeValue");
+      const textSizeSlider = document.getElementById("textSizeSlider");
+      const textSizeValue = document.getElementById("textSizeValue");
+
+      // Custom Modal Elements
+      const customModal = document.getElementById('custom-modal');
+      const modalMessage = document.getElementById('modal-message');
+      const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+      const loadingModal = document.getElementById('loading-modal'); // New loading modal
+
+      function showCustomModal(message) {
+          modalMessage.textContent = message;
+          customModal.style.display = 'flex';
+      }
+
+      modalConfirmBtn.onclick = () => {
+          customModal.style.display = 'none';
+      };
+
+      function showLoadingModal() {
+          loadingModal.style.display = 'flex';
+      }
+
+      function hideLoadingModal() {
+          loadingModal.style.display = 'none';
+      }
+
+
+      // Event listeners
+      document.querySelectorAll(".type-option").forEach((option) => {
+        option.addEventListener("click", function () {
+          document
+            .querySelectorAll(".type-option")
+            .forEach((opt) => opt.classList.remove("active"));
+          this.classList.add("active");
+          currentType = this.dataset.type;
+          document.getElementById("characterType").value = currentType;
+          updateVolumeRange();
+          generateItems();
+        });
+      });
+
+      document
+        .getElementById("characterType")
+        .addEventListener("change", function () {
+          currentType = this.value;
+          document.querySelectorAll(".type-option").forEach((opt) => {
+            opt.classList.toggle("active", opt.dataset.type === currentType);
+          });
+          updateVolumeRange();
+          generateItems();
+        });
+
+      document
+        .getElementById("volumeSlider")
+        .addEventListener("input", function () {
+          currentVolume = parseInt(this.value);
+          document.getElementById("volumeValue").textContent = currentVolume;
+          generateItems();
+        });
+
+      // New event listeners for size controls
+      circleSizeSlider.addEventListener("input", function () {
+        currentCircleSize = parseInt(this.value);
+        circleSizeValue.textContent = currentCircleSize;
+        generateItems(); // Regenerate items with new size
+      });
+
+      textSizeSlider.addEventListener("input", function () {
+        currentTextSize = parseInt(this.value);
+        textSizeValue.textContent = currentTextSize;
+        generateItems(); // Regenerate items with new size
+      });
+
+      document
+        .getElementById("colorTheme")
+        .addEventListener("change", generateItems);
+
+      function updateVolumeRange() {
+        const maxVolume = characterSets[currentType].length;
+        const slider = document.getElementById("volumeSlider");
+        slider.max = maxVolume;
+        slider.value = Math.min(currentVolume, maxVolume); // Ensure currentVolume doesn't exceed new max
+        currentVolume = parseInt(slider.value);
+        document.getElementById("volumeValue").textContent = currentVolume;
+      }
+
+      function getRandomColor(theme) {
+        const colors = colorThemes[theme];
+        return colors[Math.floor(Math.random() * colors.length)];
+      }
+
+      function generateItems() {
+        const grid = document.getElementById("itemsGrid");
+        const theme = document.getElementById("colorTheme").value;
+        const characters = characterSets[currentType];
+        const items = characters.slice(0, currentVolume);
+
+        grid.innerHTML = ""; // Clear existing items
+
+        // Adjust grid column template based on circle size for better layout
+        // This is for display on screen, PDF generation will use its own layout
+        grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${currentCircleSize}px, 1fr))`;
+
+        items.forEach((item, index) => {
+          const card = document.createElement("div");
+          card.className = "item-card";
+
+          // Apply dynamic circle size
+          card.style.width = `${currentCircleSize}px`;
+          card.style.height = `${currentCircleSize}px`;
+
+          // Apply dynamic text size
+          card.style.fontSize = `${currentTextSize}px`;
+
+          // Format display based on type
+          if (currentType === "alphabet") {
+            card.textContent = `${item} ${item.toLowerCase()}`;
+          } else {
+            card.textContent = item;
+          }
+
+          card.style.backgroundColor = getRandomColor(theme);
+
+          // Add click effect
+          card.addEventListener("click", function () {
+            this.style.transform = "scale(0.9)";
+            setTimeout(() => {
+              this.style.transform = "scale(1.1)";
+            }, 100);
+          });
+
+          grid.appendChild(card);
+        });
+
+        // Add volume display (adjusting its position if needed based on grid layout)
+        const volumeDisplay = document.createElement("div");
+        volumeDisplay.className = "volume-display";
+        volumeDisplay.textContent = `${currentVolume} items`;
+        grid.appendChild(volumeDisplay);
+      }
+
+      function downloadPNG() {
+        const grid = document.getElementById("itemsGrid");
+        html2canvas(grid, { scale: 2 }).then((canvas) => { // Increased scale for better quality
+          const link = document.createElement("a");
+          link.download = `${currentType}-${currentVolume}-items.png`;
+          link.href = canvas.toDataURL();
+          link.click();
+        });
+      }
+
+      // Define ITEM_GAP_PX globally or within the scope where it's used
+      const ITEM_GAP_PX = 15; // Gap between cards (from .items-grid gap)
+
+      async function downloadPDF() {
+          showLoadingModal(); // Show loading indicator
+
+          try {
+              const { jsPDF } = window.jspdf;
+              const doc = new jsPDF('p', 'pt', 'a4'); // Use points and A4 size
+
+              // A4 dimensions in points (approx. 72 DPI)
+              const A4_WIDTH_PT = 595.28;
+              const A4_HEIGHT_PT = 841.89;
+              const MARGIN_PT = 36; // 0.5 inch margin (approx 12.7mm)
+
+              const usableWidthPt = A4_WIDTH_PT - (2 * MARGIN_PT);
+              const usableHeightPt = A4_HEIGHT_PT - (2 * MARGIN_PT);
+
+              // Define a high rendering DPI for html2canvas to ensure sharp images in PDF
+              const RENDER_DPI = 300;
+              // Conversion factor from mm to pixels at RENDER_DPI (1 inch = 25.4mm)
+              const PX_PER_INCH_RENDER = RENDER_DPI; // Pixels per inch at render DPI
+              const PT_PER_INCH = 72; // Points per inch
+
+              // Calculate item card total dimensions including padding and border from CSS
+              const ITEM_CARD_PADDING_PX_CSS = 15; // from .item-card padding
+              const ITEM_CARD_BORDER_PX_CSS = 2;   // from .item-card border
+
+              // Scale CSS values to the RENDER_DPI context
+              const scaleFactorForCSS = RENDER_DPI / 96; // Assuming browser default DPI is 96
+
+              const scaledPadding = ITEM_CARD_PADDING_PX_CSS * scaleFactorForCSS;
+              const scaledBorder = ITEM_CARD_BORDER_PX_CSS * scaleFactorForCSS;
+              const scaledGap = ITEM_GAP_PX * scaleFactorForCSS; // Assuming ITEM_GAP_PX is also CSS px
+
+              let itemsPerRow;
+              let rowsPerPage;
+              let actualItemSizeForPDF; // This will be the size of the circle content in the PDF
+
+              // When circle size is max (500px) or very large (e.g., >= 450px), force 2 items per page
+              if (currentCircleSize >= 450) {
+                  itemsPerRow = 1; // One item per row
+                  rowsPerPage = 2; // Two rows per page
+
+                  // Calculate the exact size for each item to fill the usable A4 space
+                  // This is the size the *content inside the card* should be rendered at
+                  const targetItemContentWidthPxRender = usableWidthPt * (PX_PER_INCH_RENDER / PT_PER_INCH) - (2 * scaledPadding) - (2 * scaledBorder);
+                  const targetItemContentHeightPxRender = (usableHeightPt - scaledGap) / 2 * (PX_PER_INCH_RENDER / PT_PER_INCH) - (2 * scaledPadding) - (2 * scaledBorder);
+
+                  // Set actualItemSizeForPDF to fill the width, and adjust height proportionally
+                  actualItemSizeForPDF = Math.min(targetItemContentWidthPxRender, targetItemContentHeightPxRender);
+
+                  // Adjust currentTextSize for rendering based on the new actualItemSizeForPDF
+                  // This is a heuristic, may need fine-tuning
+                  currentTextSize = actualItemSizeForPDF * 0.5;
+
+                  console.log("Ukuran lingkaran besar terdeteksi. Memaksa 1 item per baris, 2 baris per halaman.");
+                  console.log(`Target item content size (px render): Width=${targetItemContentWidthPxRender}, Height=${targetItemContentHeightPxRender}`);
+                  console.log(`Adjusted actualItemSizeForPDF: ${actualItemSizeForPDF}, currentTextSize: ${currentTextSize}`);
+
+              } else {
+                  // For smaller sizes, use the currentCircleSize from the slider
+                  actualItemSizeForPDF = currentCircleSize;
+
+                  const itemCardTotalWidthPxRender = actualItemSizeForPDF * scaleFactorForCSS + (2 * scaledPadding) + (2 * scaledBorder);
+                  const itemCardTotalHeightPxRender = actualItemSizeForPDF * scaleFactorForCSS + (2 * scaledPadding) + (2 * scaledBorder);
+
+                  itemsPerRow = Math.floor(usableWidthPt / ((itemCardTotalWidthPxRender / PX_PER_INCH_RENDER * PT_PER_INCH) + (ITEM_GAP_PX / PX_PER_INCH_RENDER * PT_PER_INCH)));
+                  rowsPerPage = Math.floor(usableHeightPt / ((itemCardTotalHeightPxRender / PX_PER_INCH_RENDER * PT_PER_INCH) + (ITEM_GAP_PX / PX_PER_INCH_RENDER * PT_PER_INCH)));
+                  console.log(`Terhitung: itemsPerRow=${itemsPerRow}, rowsPerPage=${rowsPerPage}`);
+              }
+
+              // Ensure at least one item can fit, prevent division by zero or empty pages
+              if (itemsPerRow === 0) itemsPerRow = 1;
+              if (rowsPerPage === 0) rowsPerPage = 1;
+
+              const itemsPerPage = itemsPerRow * rowsPerPage;
+
+              console.log(`Akhir: itemsPerRow=${itemsPerRow}, rowsPerPage=${rowsPerPage}, itemsPerPage=${itemsPerPage}`);
+
+              if (itemsPerPage === 0) {
+                  showCustomModal("Ukuran lingkaran atau teks terlalu besar untuk muat di satu halaman A4. Harap kurangi ukurannya.");
+                  return;
+              }
+
+              const characters = characterSets[currentType];
+              const itemsToRender = characters.slice(0, currentVolume);
+
+              let pageCount = 0;
+
+              const renderPage = async (itemsForThisPage, pageNum) => {
+                  const tempContainer = document.createElement('div');
+                  
+                  let containerWidthPxRender;
+                  let containerHeightPxRender;
+                  let itemWidthForGrid; 
+                  let itemHeightForGrid; 
+
+                  if (currentCircleSize >= 450) { // Max size case
+                      // For max size, the container should be exactly the usable A4 dimensions in render pixels
+                      containerWidthPxRender = usableWidthPt * (PX_PER_INCH_RENDER / PT_PER_INCH);
+                      containerHeightPxRender = usableHeightPt * (PX_PER_INCH_RENDER / PT_PER_INCH);
+                      itemWidthForGrid = containerWidthPxRender; // Item takes full width of container
+                      itemHeightForGrid = (containerHeightPxRender - scaledGap) / 2; // Item takes half height minus gap
+                  } else { // Smaller sizes
+                      itemWidthForGrid = actualItemSizeForPDF * scaleFactorForCSS + (2 * scaledPadding) + (2 * scaledBorder);
+                      itemHeightForGrid = actualItemSizeForPDF * scaleFactorForCSS + (2 * scaledPadding) + (2 * scaledBorder);
+                      containerWidthPxRender = (itemsPerRow * itemWidthForGrid) + ((itemsPerRow - 1) * scaledGap);
+                      containerHeightPxRender = (rowsPerPage * itemHeightForGrid) + ((rowsPerPage - 1) * scaledGap);
+                  }
+
+                  tempContainer.style.width = `${containerWidthPxRender}px`;
+                  tempContainer.style.height = `${containerHeightPxRender}px`;
+                  tempContainer.style.padding = '0';
+                  tempContainer.style.margin = '0';
+                  tempContainer.style.display = 'grid';
+                  tempContainer.style.gridTemplateColumns = `repeat(${itemsPerRow}, ${itemWidthForGrid}px)`;
+                  tempContainer.style.gap = `${scaledGap}px`;
+                  tempContainer.style.boxSizing = 'border-box';
+                  tempContainer.style.overflow = 'hidden';
+                  tempContainer.style.backgroundColor = 'white';
+                  tempContainer.style.position = 'absolute'; // Position off-screen
+                  tempContainer.style.left = '-9999px';
+                  tempContainer.style.top = '-9999px';
+
+
+                  itemsForThisPage.forEach(item => {
+                      const card = document.createElement("div");
+                      card.className = "item-card";
+                      // Apply dynamic sizes directly in pixels for the temporary container
+                      // For max size, these will be calculated to fill the space
+                      if (currentCircleSize >= 450) {
+                          // When currentCircleSize is adjusted for PDF, use that for card's width/height
+                          card.style.width = `${actualItemSizeForPDF}px`;
+                          card.style.height = `${actualItemSizeForPDF}px`;
+                          card.style.fontSize = `${currentTextSize}px`;
+                      } else {
+                          card.style.width = `${currentCircleSize}px`;
+                          card.style.height = `${currentCircleSize}px`;
+                          card.style.fontSize = `${currentTextSize}px`;
+                      }
+                      card.style.backgroundColor = getRandomColor(document.getElementById("colorTheme").value);
+
+                      if (currentType === "alphabet") {
+                          card.textContent = `${item} ${item.toLowerCase()}`;
+                      } else {
+                          card.textContent = item;
+                      }
+                      tempContainer.appendChild(card);
+                  });
+
+                  document.body.appendChild(tempContainer);
+
+                  const canvas = await html2canvas(tempContainer, {
+                      scale: 1, // Already scaled by container dimensions
+                      width: containerWidthPxRender,
+                      height: containerHeightPxRender,
+                      windowWidth: containerWidthPxRender,
+                      windowHeight: containerHeightPxRender,
+                      scrollX: 0,
+                      scrollY: 0,
+                      useCORS: true
+                  });
+
+                  document.body.removeChild(tempContainer);
+
+                  const imgData = canvas.toDataURL("image/png");
+
+                  if (pageNum > 0) {
+                      doc.addPage();
+                  }
+                  // Add image to PDF. Convert render pixels back to PDF points for positioning and size.
+                  const imgWidthPt = containerWidthPxRender * (PT_PER_INCH / PX_PER_INCH_RENDER);
+                  const imgHeightPt = containerHeightPxRender * (PT_PER_INCH / PX_PER_INCH_RENDER);
+
+                  // For max size, we want it to fill the usable area directly
+                  // For other sizes, it will be scaled to fit as before
+                  doc.addImage(imgData, 'PNG', MARGIN_PT, MARGIN_PT, imgWidthPt, imgHeightPt, undefined, 'FAST');
+              };
+
+              for (let i = 0; i < itemsToRender.length; i += itemsPerPage) {
+                  const pageItems = itemsToRender.slice(i, i + itemsPerPage);
+                  await renderPage(pageItems, pageCount);
+                  pageCount++;
+              }
+
+              doc.save(`${currentType}-${currentVolume}-items.pdf`);
+
+          } catch (error) {
+              console.error("Error during PDF generation:", error);
+              showCustomModal("Gagal mengunduh PDF. Silakan coba lagi.");
+          } finally {
+              hideLoadingModal(); // Hide loading indicator
+          }
+      }
+
+
+      function clearItems() {
+        document.getElementById("itemsGrid").innerHTML = "";
+      }
+
+      // Initialize on page load
+      window.onload = function() {
+        updateVolumeRange();
+        generateItems();
+
+        // Set initial slider values to reflect current state
+        circleSizeSlider.value = currentCircleSize;
+        circleSizeValue.textContent = currentCircleSize;
+        textSizeSlider.value = currentTextSize;
+        textSizeValue.textContent = currentTextSize;
+      };
+    </script>
+  </body>
+</html>
